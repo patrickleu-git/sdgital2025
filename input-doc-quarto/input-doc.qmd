@@ -1,0 +1,712 @@
+---
+title: "Inputpapier: Wichtigste Erkenntnisse aus der Bestandesaufnahme 2023-2026 zur Umsetzung der Agenda 2030"
+subtitle: "Workshop Serie II"
+date: 2025-08-13
+date-format: "D. MMMM YYYY"
+author: "Author"
+
+format:
+  pdf:
+    toc: true
+    toc-title: Inhaltsverzeichnis
+    colorlinks: true
+    number-sections: true
+    mainfont: Latin Modern Roman
+    fig-format: png
+
+execute: 
+  echo: false
+  warning: false
+  message: false
+
+editor: visual
+---
+
+```{r}
+#| context: setup
+#| label: setup
+#| warning: false
+
+library(tidyverse)
+library(here)
+library(readxl)
+library(reticulate)
+library(janitor)
+library(glue)
+library(ggtext)
+library(ggrepel)
+library(ggview)
+library(ggbeeswarm)
+library(viridis)
+library(systemfonts)
+
+# general theme for plots
+theme_plots = theme(
+  text = element_text(family = "Source Sans Pro"),
+  plot.title = element_text(face = "bold", hjust = 0, size = 12),
+  plot.subtitle = element_markdown(size = 10),
+  plot.tag.position = "bottom",
+  plot.tag = element_markdown(face = "bold", size = 12, margin = margin(t = 15)),
+  axis.title.x.top = element_text(face = "bold", colour = "black", size = 10, margin = margin(b = 15)),
+  axis.text.x = element_text(face = "bold", colour = "black",size = 8),
+  axis.title.y = element_text(face = "bold", colour = "black", size = 10, angle = 0, vjust = 1, hjust = 0, margin = margin(r = -70)),
+  axis.text.y = element_text(face = "bold", colour = "black", size = 8),
+  legend.title = element_text(face = "bold", hjust = 0, size = 10),
+  legend.text = element_text(size = 10),
+  legend.position = "bottom",
+  panel.grid.minor.y = element_blank())
+
+```
+
+```{r}
+#| label: read data and create custom data sets
+
+# load data (and define factor cols)
+
+trend_levels = c("NotSpecified", 
+                 "VeryUnrealistic", 
+                 "RatherUnrealistic", 
+                 "Realistic", 
+                 "RatherRealistic", 
+                 "VeryRealistic")
+
+ambition_levels = c("NotSpecified", 
+                 "FarTooLittleAmbitious", 
+                 "TooLittleAmbitious", 
+                 "ExactlyRightAmbitious", 
+                 "TooMuchAmbitious")
+
+allg = read_xlsx(here("data/export-interne-final.xlsx"), sheet = "Targets") |> 
+  clean_names() |> 
+  mutate(
+    trend_evaluation_level = fct(trend_evaluation_level, levels = trend_levels),
+    ambition_evaluation_level = fct(ambition_evaluation_level, levels = ambition_levels)
+  )
+
+mass = read_xlsx(here("data/export-interne-final.xlsx"), sheet = "Measures") |> clean_names()
+hand = read_xlsx(here("data/export-interne-final.xlsx"), sheet = "ActionFields") |> clean_names()
+
+# define list containing respective focus topic's targets (in order of appearence)
+focus_targets = list(
+  st1 = c("12.8", "12.c", "12.2", "8.4", "8.2", "12.4", "2.1", "12.3", "2.4", "12.6"),
+  st2 = c("13.2", "13.1", "11.b", "13.3", "7.3", "7.1", "7.2", "15.5", "15.8", "15.a", "15.1", "6.6", "15.3"),
+  st3 = c("1.2", "3.8", "11.1", "4.3", "10.3", "8.5", "10.7", "10.2", "11.a", "1.3", "5.1", "5.4", "5.5", "5.2")
+)
+
+# function to filter and factor
+separate_df <- function(target_ids) {
+  
+  filter_and_factor <- function(df) {
+    df |> filter(target_id %in% target_ids) |> 
+      mutate(target_id = factor(target_id, levels = target_ids, ordered = TRUE))
+  }
+  list(allg = filter_and_factor(allg), mass = filter_and_factor(mass), hand = filter_and_factor(hand))
+}
+
+# map over target_ids
+df = map(focus_targets, separate_df)
+
+```
+
+# Einleitung
+
+**Inputdokument** Dieses Inputdokument enthält wichtige Erkenntnisse aus der Auswertung der Bestandesaufnahme 2023-2026 zur Umsetzung der Agenda 2030. Es ist eine Grundlage für die Workshopreihe II mit Akteuren der vier Treiber-Gruppen (Zivilgesellschaft, Wirtschaft, Finanzmarkt, Wirtschaft sowie Bildung, Forschung und Innovation), mit Kantonen und Städten/Gemeinden sowie mit bundesinternen Stellen.
+
+**Strukturierung** Das Dokument strukturiert sich entlang der Schwerpunktthemen der Strategie Nachhaltige Entwicklung 2030 (SNE 2030): nachhaltiger Konsum und nachhaltige Produktion; Klima, Energie und Biodiversität; Chancengleichheit und sozialer Zusammenhalt.
+
+# Ziel des Workshops
+
+Die Workshops im Teil II verfolgen zwei Ziele:
+
+1.  Ziel 1.
+2.  Ziel 2.
+
+# Schwerpunktthemen der Strategie nachhaltige Entwicklung 2030
+
+## Nachhaltiger Konsum und nachhaltige Produktion
+
+**Einschätzung Ambitionsgrad und Trendentwicklung**
+
+Zuerst zur aktuellen Einschätzung, wie ambitioniert die Zielsetzung des Bundes ist. In @fig-st2 sieht man, ...
+
+Der Bund schätzt die weitere Entwicklung folgendermassen ein: ...
+
+```{r}
+#| eval: false
+
+# Plot zum Ambitionsgrad
+ggplot(
+  df$st1$allg, 
+  aes(x = target_id, ambition_evaluation_level)
+)+
+  geom_point()+
+  scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "Unambitioniert", "Zu wenig ambitioniert", "Genau richtig", "Zu ambitioniert")
+    )+
+  labs(
+    title = "Nachhaltiger Konsum und nachhaltige Produktion",
+    subtitle = "Ambitionslevel nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots +
+  theme(axis.title.y = element_text(margin = margin(r = 0)))#+
+
+```
+
+```{r}
+#| label: fig-st1
+#| layout-ncol: 1
+#| fig-cap: "Trendentwicklung nach Target"
+#| fig-width: 8
+#| fig-height: 4.5
+
+# Plot zur Trendeinschätzung
+ggplot(
+  df$st1$allg, 
+  aes(x = target_id, trend_evaluation_level)
+)+
+  geom_point()+
+  scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  labs(
+    title = "Nachhaltiger Konsum und nachhaltige Produktion",
+    # subtitle = "Trendeinschätzung nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(axis.title.y = element_text(margin = margin(r = 0)))
+
+```
+
+**Vergleich letzte Trendeinschätzung**
+
+In @fig-arrowplot1 kann beobachtet werden, dass sich die Trendeinschätzung für die meisten Targets im Vergleich letzten Einschätzung verschlechtert hat. Dies ist zurückzuführen auf ...
+
+::: landscape
+```{r}
+#| label: fig-arrowplot1
+#| fig-cap: "Änderung in der Trendeinschätzung 2022-2025"
+#| fig-width: 8
+#| fig-height: 4.5
+
+# 2022 data set for comparison arrow plot
+df2022 = read_csv(here("./data/allgemein.csv")) |> 
+  clean_names() |> 
+  mutate(trend_evaluation = fct(trend_evaluation, levels = trend_levels))
+
+# for each focus topic
+df2022_list = map(focus_targets, \(targets) df2022 %>% filter(id %in% targets))
+
+# combine df for arrow plot
+df_arrow = tibble(
+  target_id = df2022_list$st1$id,
+  trend2025 = df$st1$allg$trend_evaluation_level,
+  trend2022 = df2022_list$st1$trend_evaluation
+) |> 
+  mutate(
+    change = case_when(
+      trend2022 == "NotSpecified" ~ "new",
+      trend2022 != "NotSpecifed" ~ case_when(
+        (as.numeric(trend2022) - as.numeric(trend2025)) == 0 ~ "same", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) > 0 ~ "negative", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) < 0 ~ "positive")
+      ))
+
+# duplicate target 12.2
+df_arrow[11,] = df_arrow[5,]
+df_arrow[5,1] = ("12.2(a)")
+df_arrow[11,1] = ("12.2(b)")
+
+# factor and arrange target_id s.t. it's easier to add sub-focus topic
+new_ids = c("12.8", "12.c", "12.2(a)", "8.4", "8.2", "12.4", "2.1", "12.3", "12.2(b)", "2.4", "12.6")
+df_arrow = df_arrow |> 
+  mutate(target_id = fct(target_id, levels = new_ids)) |> 
+  arrange((target_id))
+
+# add sub-focus topic
+df_arrow$unterthema = c(
+  rep("Nachhaltige Konsummuster fördern und ermöglichen", 2), 
+  rep("Wohlstand und Wohlergehen unter Schonung der natürlichen Ressourcen sichern", 4), 
+  rep("Transformation hin zu nachhaltigen Ernährungssystemen vorantreiben", 4), 
+  "Unternehmensverantwortung stärken"
+  )
+
+# draw the arrow plot
+ggplot()+
+  geom_segment(
+    data = filter(df_arrow, !(change %in% c("same", "new"))),
+    aes(x = trend2022, xend = trend2025,
+        y = target_id, yend = target_id, colour = change),
+    arrow = arrow(angle = 30, length = unit(0.2, "cm")),
+    linewidth = 0.5
+  )+
+  geom_point(
+    data = df_arrow,
+    aes(x = trend2025, y = target_id, colour = change),
+    shape = 18, size = 2
+  )+
+  geom_point(
+    data = filter(df_arrow, change != "new"),
+    aes(x = trend2022, y = target_id, colour = change),
+    shape = 18, size = 2
+  )+
+  scale_x_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  geom_hline(
+    yintercept = 18,
+    colour = "black"
+  )+
+  geom_vline(
+    xintercept = 0.405,
+    colour = "black"
+  )+
+  scale_colour_manual(
+    values = c(
+      "positive" = "dodgerblue3", 
+      "negative" = "red3", 
+      "same" = "black", 
+      "new" = "grey40")
+  )+
+  facet_wrap(
+    ~factor(unterthema, levels = c("Nachhaltige Konsummuster fördern und ermöglichen", "Wohlstand und Wohlergehen unter Schonung der natürlichen Ressourcen sichern", "Transformation hin zu nachhaltigen Ernährungssystemen vorantreiben", "Unternehmensverantwortung stärken")), 
+    scales = "free_y", 
+    ncol = 1
+  )+
+  labs(
+    x = NULL,
+    y = NULL,
+    title = "Nachhaltiger Konsum und nachhaltige Produktion",
+    subtitle = "Bei einigen Zielen schätzt der Bund die Zielerreichung neu
+    <span style='color:red3;'>weniger realistisch</span> ein. <br>
+    Ziele in <span style='color:grey40;'>grau</span> wurden zum ersten Mal eingeschätzt",
+  )+
+  guides(colour = "none")+
+  theme_minimal()+
+  theme_plots+
+  theme(strip.text = element_text(face = "bold"))
+
+# save_ggplot(last_plot(), here("outputs/arrow_st1.png"), width = 12, height = 6.75, bg = "white")
+  
+```
+:::
+
+```{r}
+#| label: scatterplot
+#| fig-width: 12
+#| fig-height: 6
+#| eval: false
+
+
+# some dirty hard coding follows...
+
+# all SNE targets and respective MONET indicator assessment
+sne_targets = tibble(
+  target_id = c(
+    # focus topic 1
+    "12.8", "12.c", "12.2(a)", "8.4", "8.2", "12.4", "2.1", "12.3", "12.2(b)", "2.4", "12.6",
+    
+    # focus topic 2
+    "13.2", "13.1", "11.b", "13.3", "7.3", "7.1", "7.2", "15.5", "15.8", "15.a", "15.1", "6.6", "15.3",
+    
+    # focus topic 3
+    "1.2", "3.8", "11.1", "4.3", "10.3", "8.5(a)", "10.7", "10.2", "11.a", "1.3", "5.1", "5.4", "8.5(b)", "5.5", "5.2"
+  ),
+  monet = c(
+    # focus topic 1
+    "nicht qualifizierbar", "nicht qualifizierbar", "positiv", "positiv", "positiv", "positiv", "negativ", "kein Indikator", "positiv", "positiv", "kein Indikator",
+    
+    # focus topic 2
+    "unverändert", "kein Indikator", "nicht qualifizierbar", "nicht qualifizierbar", "positiv", "positiv", "positiv", "unverändert", "negativ", "positiv", "positiv", "nicht qualifizierbar", "negativ",
+    
+    # focus topic 3
+    "unverändert", "unverändert", "unverändert", "positiv", "negativ", "unverändert", "doppeldeutig", "kein Indikator", "kein Indikator", "nicht qualifizierbar", "positiv", "positiv", "positiv", "positiv", "nicht qualifizierbar"
+  )
+)
+
+# define colour codes
+colours = c("kein Indikator" = "white", "nicht qualifizierbar" = "grey50", "negativ" = "salmon", "doppeldeutig" = "magenta3", "unverändert" = "grey20", "positiv" = "skyblue")
+
+# prepare df for scatter plot
+df_scatter = allg |> 
+  filter(target_id %in% str_remove_all(sne_targets$target_id, "\\(.\\)")) |> 
+  select(target_id, trend_evaluation_level)
+
+# double targets
+duplicates = df_scatter |> filter(target_id %in% c("12.2", "8.5"))
+
+df_scatter = rbind(df_scatter, duplicates)
+
+df_scatter$target_id[17] = "8.5(a)"
+df_scatter$target_id[38] = "8.5(b)"
+df_scatter$target_id[24] = "12.2(a)"
+df_scatter$target_id[39] = "12.2(b)"
+
+# join trend evaluation and MONET assessment
+df_scatter = left_join(sne_targets, df_scatter, by = "target_id") |> 
+  mutate(monet = fct(monet, levels = names(colours)))
+
+
+
+# plot
+df_scatter |> 
+  ggplot()+
+  geom_beeswarm(
+    aes(x = trend_evaluation_level, y = monet, fill = monet), 
+    alpha = 0.7,
+    shape = 21,
+    size = 2,
+    cex = 0.8
+    )+
+  geom_label_repel(
+    aes(x = trend_evaluation_level, y = monet), 
+    label = df_scatter$target_id,
+    max.overlaps = 20,
+    nudge_y       = 0.5,
+    segment.size  = 0.2,
+    segment.color = "grey",
+    direction     = "x",
+    hjust         = 0.5
+    )+
+  annotate("rect", xmin = 2.7, xmax = 5.3, ymin = 5.8, ymax = 6.2, fill = "lightgreen", alpha = 0.2)+
+  annotate("rect", xmin = 0.7, xmax = 2.3, ymin = 2.8, ymax = 3.2, fill = "lightgreen", alpha = 0.2)+
+  annotate("rect", xmin = 0.7, xmax = 2.3, ymin = 5.8, ymax = 6.2, fill = "orange", alpha = 0.2)+
+  annotate("rect", xmin = 2.7, xmax = 5.3, ymin = 2.8, ymax = 3.2, fill = "orange", alpha = 0.2)+
+  scale_x_discrete(
+    position = "top", 
+    labels = c("sehr unrealistisch", "", "realistisch", "", "sehr realistisch"),
+    )+
+  scale_fill_manual(
+    values = colours,
+    guide = "none"
+    )+
+  labs(
+    x = "Die Zielerreichung ist nach Einschätzung der Bundesstellen...",
+    y = "Die Entwicklung des \nMONET-Indikators ist...",
+    tag = "Bei vielen Unterzielen ist <span style='color:lightgreen;'>Übereinstimmung</span> hinsichtlich Trendeinschätzung und Stand der 
+    Indikator(en) gegeben, <br>bei wenigen ist allerdings eine <span style='color:orange;'>Divergenz</span> ersichtlich."
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(
+    axis.title.x.top = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+    )
+
+# save_ggplot(last_plot(), here("outputs/scatter_trend_monet.png"), width = 12, height = 6.75, bg = "white", scale = 1.2)
+
+```
+
+## Klima, Energie und Biodiversität
+
+**Einschätzung Ambitionsgrad und Trendentwicklung**
+
+Zuerst zur aktuellen Einschätzung, wie ambitioniert die Zielsetzung des Bundes ist. In @fig-st2 sieht man, ...
+
+Der Bund schätzt die weitere Entwicklung folgendermassen ein: ...
+
+```{r}
+#| eval: false
+
+# Plot zum Ambitionsgrad
+ggplot(
+  df$st2$allg, 
+  aes(x = target_id, ambition_evaluation_level)
+)+
+  geom_point()+
+  scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "Unambitioniert", "Zu wenig ambitioniert", "Genau richtig", "Zu ambitioniert")
+    )+
+  labs(
+    title = "Klima, Energie und Biodiversität",
+    subtitle = "Ambitionslevel nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(axis.title.y = element_text(margin = margin(r = 0)))#+
+  #canvas(8, 6, units = "cm", scale = 2)
+
+
+```
+
+```{r}
+#| label: fig-st2
+#| layout-ncol: 1
+#| fig-cap: "Trendentwicklung nach Target"
+#| fig-width: 8
+#| fig-height: 4.5
+
+# Plot zur Trendeinschätzung
+ggplot(
+  df$st2$allg, 
+  aes(x = target_id, trend_evaluation_level)
+)+
+  geom_point()+
+  scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  labs(
+    title = "Klima, Energie und Biodiversität",
+    #subtitle = "Trendeinschätzung nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(axis.title.y = element_text(margin = margin(r = 0)))#+
+  #canvas(8, 6, units = "cm", scale = 2)
+
+
+```
+
+```{r}
+#| label: fig-arrowplot2
+#| fig-cap: "Änderung in der Trendeinschätzung 2022-2025"
+#| fig-width: 8
+#| fig-height: 4.5
+
+df2022_list$st2 = df2022_list$st2 |> 
+  mutate(id = id |> factor(levels = focus_targets$st2, ordered = T))
+
+df_arrow2 = left_join(df2022_list$st2, df$st2$allg, by = join_by("id" == "target_id")) |> 
+  select(id, trend_evaluation, trend_evaluation_level) |> 
+  rename(c(trend2022 = "trend_evaluation", trend2025 = "trend_evaluation_level")) |> 
+  mutate(
+    change = case_when(
+      trend2022 == "NotSpecified" ~ "new",
+      trend2022 != "NotSpecifed" ~ case_when(
+        (as.numeric(trend2022) - as.numeric(trend2025)) == 0 ~ "same", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) > 0 ~ "negative", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) < 0 ~ "positive")
+      )
+  ) |> 
+  arrange(desc(id))
+
+
+# add sub-focus topic
+df_arrow2$unterthema = c(rep(1, 6), rep(2, 3), rep(3, 4))
+
+ggplot()+
+  geom_point(
+    data = df_arrow2,
+    aes(x = trend2025, y = fct_rev(id), colour = change),
+    shape = 18, size = 2
+  )+
+  geom_point(
+    data = filter(df_arrow2, change != "new"),
+    aes(x = trend2022, y = fct_rev(id), colour = change),
+    shape = 18, size = 2
+  )+
+  geom_segment(
+    data = filter(df_arrow2, !(change %in% c("same", "new"))),
+    aes(x = trend2022, xend = trend2025,
+        y = fct_rev(id), yend = fct_rev(id), colour = change),
+    arrow = arrow(angle = 30, length = unit(0.2, "cm"))
+  )+scale_x_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  geom_hline(
+    yintercept = 18,
+    colour = "black"
+  )+
+  geom_vline(
+    xintercept = 0.405,
+    colour = "black"
+  )+
+  scale_colour_manual(
+    values = c(
+      "positive" = "dodgerblue3", 
+      "negative" = "red3", 
+      "same" = "black", 
+      "new" = "grey30")
+  )+
+  facet_wrap(~factor(unterthema, levels = c(3,2,1), labels = c("Treibhausgasemissionen reduzieren und klimabedingte Auswirkungen bewältigen", "Energieverbrauch senken, Energie effizienter nutzen und erneuerbare Energien ausbauen", "Biologische Vielfalt erhalten, nachhaltig nutzen, fördern und wiederherstellen")), ncol = 1, scales = "free_y")+
+  labs(
+    x = NULL,
+    y = NULL,
+    title = "Klima, Energie und Biodiversität",
+    subtitle = "Bei einigen Unterzielen schätzt der Bund die Zielerreichung neu <span style='color:red3;'>weniger realistisch</span> ein. <br>
+    Ziele in <span style='color:grey30;'>grau</span> wurden zum ersten Mal eingeschätzt",
+    colour = "Entwicklung der Einschätzung",
+  )+
+  guides(colour = "none")+
+  theme_minimal()+
+  theme_plots+
+  theme(strip.text = element_text(face = "bold"))#+
+  #canvas(16, 9, units = "cm", scale = 1.3)
+ 
+# save_ggplot(last_plot(), here("outputs/arrow_st2.png"), width = 12, height = 6.75, bg = "white")
+
+```
+
+## Chancengleichheit und sozialer Zusammenhalt
+
+**Einschätzung Ambitionsgrad und Trendentwicklung**
+
+Zuerst zur Einschätzung, wie ambitioniert die Zielsetzung des Bundes ist. In @fig-st3 sieht man, ...
+
+Bei der Einschätzung zur weiteren Entwicklung lässt sich folgendes ablesen: ...
+
+```{r}
+#| eval: false
+
+# Plot zum Ambitionsgrad
+ggplot(
+  df$st3$allg, 
+  aes(x = target_id, ambition_evaluation_level)
+)+
+  geom_point()+
+  scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "Unambitioniert", "Zu wenig ambitioniert", "Genau richtig", "Zu ambitioniert")
+    )+
+  labs(
+    title = "Chancengleichheit und sozialer Zusammenhalt",
+    subtitle = "Ambitionslevel nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(axis.title.y = element_text(margin = margin(r = 0)))#+
+  #canvas(8, 6, units = "cm", scale = 2)
+
+```
+
+```{r}
+#| label: fig-st3
+#| layout-ncol: 1
+#| fig-cap: "Trendentwicklung nach Target"
+#| fig-width: 8
+#| fig-height: 4.5
+
+# Plot zur Trendeinschätzung
+ggplot(
+  df$st3$allg, 
+  aes(x = target_id, trend_evaluation_level)
+)+
+  geom_point()+
+   scale_y_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  labs(
+    title = "Chancengleichheit und sozialer Zusammenhalt",
+    #subtitle = "Trendeinschätzung nach Unterzielen",
+    x = "", 
+    y = ""
+  )+
+  theme_minimal()+
+  theme_plots+
+  theme(axis.title.y = element_text(margin = margin(r = 0)))#+
+  #canvas(8, 6, units = "cm", scale = 2)
+
+
+```
+
+```{r}
+#| label: fig-arrowplot3
+#| fig-cap: "Änderung in der Trendeinschätzung 2022-2025"
+#| fig-width: 8
+#| fig-height: 4.5
+
+# combine df for arrow plot
+df_arrow3 = tibble(
+  target_id = df2022_list$st3$id,
+  trend2025 = df$st3$allg$trend_evaluation_level,
+  trend2022 = df2022_list$st3$trend_evaluation
+) |> 
+  mutate(
+    change = case_when(
+      trend2022 == "NotSpecified" ~ "new",
+      trend2022 != "NotSpecifed" ~ case_when(
+        (as.numeric(trend2022) - as.numeric(trend2025)) == 0 ~ "same", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) > 0 ~ "negative", 
+        (as.numeric(trend2022) - as.numeric(trend2025)) < 0 ~ "positive")
+      ))
+  
+
+    
+# duplicate target 8.5
+df_arrow3[15,] = df_arrow3[9,]
+df_arrow3[9,1] = as.factor("8.5(a)")
+df_arrow3[15,1] = as.factor("8.5(b)")
+
+# factor and arrange target_id s.t. it's easier to add sub-focus topic
+df_arrow3 = df_arrow3 |> 
+  mutate(target_id = factor(target_id, levels = rev(c("1.2", "3.8", "11.1", "4.3", "10.3", "8.5(a)", "10.7", "10.2", "11.a", "1.3", "5.1", "5.4", "8.5(b)", "5.5", "5.2")), ordered = TRUE)) |> 
+  arrange(desc(target_id))
+
+# add sub-focus topic
+df_arrow3$unterthema = c(rep(1, 4), rep(2, 6), rep(3, 5))
+
+# draw the arrow plot
+ggplot()+
+  geom_segment(
+    data = filter(df_arrow3, !(change %in% c("same", "new"))),
+    aes(x = trend2022, xend = trend2025,
+        y = target_id, yend = target_id, colour = change),
+    arrow = arrow(angle = 30, length = unit(0.2, "cm")),
+    linewidth = 0.5
+  )+
+  geom_point(
+    data = df_arrow3,
+    aes(x = trend2025, y = target_id, colour = change),
+    shape = 18, size = 2
+  )+
+  geom_point(
+    data = filter(df_arrow3, change != "new"),
+    aes(x = trend2022, y = target_id, colour = change),
+    shape = 18, size = 2
+  )+
+  scale_x_discrete(
+    drop = FALSE,
+    labels = c("keine Einschätzung", "sehr unrealistisch", "", "realistisch", "", "sehr realistisch")
+    )+
+  geom_hline(
+    yintercept = 18,
+    colour = "black"
+  )+
+  geom_vline(
+    xintercept = 0.405,
+    colour = "black"
+  )+
+  scale_colour_manual(
+    values = c(
+      "positive" = "dodgerblue3", 
+      "negative" = "red3", 
+      "same" = "black", 
+      "new" = "grey30")
+  )+
+  facet_wrap(~factor(unterthema, levels = c(1,2,3), labels = c("Selbstbestimmung jeder und jedes Einzelnen fördern", "Sozialen Zusammenhalt sicherstellen", "Tatsächliche Gleichstellung von Frau und Mann gewährleisten")), ncol = 1, scales = "free_y")+
+  labs(
+    x = NULL,
+    y = NULL,
+    title = "Chancengerechtigkeit und sozialer Zusammenhalt",
+    subtitle = "Bei einigen Zielen schätzt der Bund die Zielerreichung neu
+    <span style='color:red3;'> weniger realistisch</span> ein.",
+  )+
+  guides(colour = "none")+
+  theme_minimal()+
+  theme_plots+
+  theme(strip.text = element_text(face = "bold"))#+
+  #canvas(16, 9, units = "cm", scale = 1.3)
+
+# save_ggplot(last_plot(), here("outputs/arrow_st3.png"), width = 12, height = 6.75, bg = "white")
+
+```
